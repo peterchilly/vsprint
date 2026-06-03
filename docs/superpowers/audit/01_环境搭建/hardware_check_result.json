@@ -1,0 +1,68 @@
+{
+  "date": "2026-06-02",
+  "tests": [
+    {
+      "test": "TC-GPU-001",
+      "name": "GPU显存大小",
+      "value": "16303 MB (15.9 GB)",
+      "passed": true,
+      "message": "满足要求 (>= 8GB)",
+      "level": "block"
+    },
+    {
+      "test": "TC-GPU-002",
+      "name": "CUDA版本",
+      "value": "驱动 591.86 / CUDA Toolkit 未安装",
+      "passed": true,
+      "message": "驱动支持CUDA 13.1，PyTorch自带runtime无需单独安装nvcc",
+      "level": "block"
+    },
+    {
+      "test": "TC-GPU-003",
+      "name": "GPU型号与计算能力",
+      "value": "NVIDIA GeForce RTX 5070 Ti, 计算能力 12.0",
+      "passed": true,
+      "message": "满足PyTorch要求 (>= 3.5)",
+      "level": "block"
+    },
+    {
+      "test": "TC-DEVICE-001",
+      "name": "训练设备决策记录",
+      "value": "hardware_report.md 已创建",
+      "passed": true,
+      "message": "硬件评估报告已生成并包含设备选择决策",
+      "level": "block"
+    },
+    {
+      "test": "TC-SYS-001",
+      "name": "CPU逻辑核心数",
+      "value": "16 核",
+      "passed": true,
+      "message": "满足要求 (>= 8核)",
+      "level": "warn"
+    },
+    {
+      "test": "TC-SYS-002",
+      "name": "系统内存",
+      "value": "31.9 GB",
+      "passed": true,
+      "message": "满足要求 (>= 16GB)",
+      "level": "warn"
+    },
+    {
+      "test": "TC-SYS-003",
+      "name": "磁盘可用空间",
+      "value": "C: 88GB free, D: 6GB free, E: 208GB free, F: 312GB free (最佳: F: 312GB)",
+      "passed": true,
+      "message": "E盘 208GB 可用，满足要求 (>= 200GB)",
+      "level": "warn"
+    }
+  ],
+  "summary": {
+    "block_passed": 4,
+    "block_total": 4,
+    "warn_passed": 3,
+    "warn_total": 3,
+    "verdict": "[通过] 所有测试通过！硬件满足训练要求。"
+  }
+}
