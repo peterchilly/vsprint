@@ -1,5 +1,74 @@
 # 任务执行日志
 
+## 阶段三：模型构建 - T3.1 ~ T3.5（全部完成）
+
+### 执行时间
+2026-06-07 19:39 - 2026-06-07 19:45
+
+### 任务概述
+实现 ERes2NetV2 说话人识别 Backbone 及相关模块。
+
+### T3.1 ERes2NetV2 Backbone 实现 ✅
+- ✅ 实现 `ERes2NetV2BasicBlock`（expansion=1，用于 34 层）
+- ✅ 实现 `ERes2NetV2Bottleneck`（expansion=4，用于 50/101/152 层）
+- ✅ 分组特征提取 + 特征复用机制
+- ✅ SE-Block 通道注意力
+- ✅ 选择性残差融合（可学习 α, β）
+- ✅ Attentive Statistics Pooling（说话人识别标准池化）
+- ✅ 前向传播测试：4 变体全部通过
+- ✅ 梯度反传测试：无 NaN/Inf
+
+### T3.2 模型变体配置 ✅
+- ✅ ERes2NetV2-34：4.75M 参数，[3,4,6,3] blocks
+- ✅ ERes2NetV2-50：16.65M 参数，[3,4,6,3] blocks
+- ✅ ERes2NetV2-101：28.40M 参数，[3,4,23,3] blocks
+- ✅ ERes2NetV2-152：38.08M 参数，[3,8,36,3] blocks
+- ✅ 统一工厂函数 `create_eres2netv2()` + 便捷函数
+
+### T3.3 预训练权重支持 ✅
+- ✅ `_init_weights()` 自动初始化
+- ✅ `num_parameters()` 参数量统计
+- ✅ Checkpoint 保存/恢复机制（state_dict 兼容）
+- ✅ 分类头可选（num_speakers=None 时仅输出 embedding）
+
+### T3.4 模型验证 ✅
+- ✅ 输出维度验证：(batch, 1, 80, 300) → (batch, 192)
+- ✅ 前向传播：4 变体无报错
+- ✅ 梯度反传：loss=7.53，无 NaN/Inf
+- ✅ GPU 推理：loss=6.97，显存占用 51.9MB
+
+### T3.5 辅助模块 ✅
+- ✅ AAMSoftmaxLoss（说话人识别标准损失）
+- ✅ ArcFaceLoss（可选损失函数）
+- ✅ AttentiveStatsPool（注意力统计池化）
+- ✅ SELayer（通道注意力）
+
+### 测试输出
+```
+🧪 测试 1: 前向传播
+  ✅ ERes2NetV2-34: input(2,1,80,300) → embedding(2,192), 参数: 4.75M
+  ✅ ERes2NetV2-50: input(2,1,80,300) → embedding(2,192), 参数: 16.65M
+  ✅ ERes2NetV2-101: input(2,1,80,300) → embedding(2,192), 参数: 28.40M
+  ✅ ERes2NetV2-152: input(2,1,80,300) → embedding(2,192), 参数: 38.08M
+
+🧪 测试 2: 带分类头
+  ✅ ERes2NetV2-34 + classifier: input(2,1,80,300) → embedding(2,192) + logits(2,100)
+
+🧪 测试 3: 梯度反传
+  ✅ 梯度反传正常，loss=7.5297
+  ✅ 无 NaN/Inf 梯度
+
+🧪 测试 4: AAM-Softmax 损失
+  ✅ AAM-Softmax: batch=32, loss=7.7520
+
+🧪 测试 5: GPU 推理
+  ✅ GPU 推理正常，loss=6.9708
+  ✅ GPU 显存占用: 51.9 MB
+```
+
+---
+
+
 ## 阶段二：数据准备 - T2.1 ~ T2.5（批量执行）
 
 ### 执行时间
