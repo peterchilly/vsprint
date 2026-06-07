@@ -1,0 +1,102 @@
+# 任务执行日志
+
+## 阶段二：数据准备 - T2.1 ~ T2.5（批量执行）
+
+### 执行时间
+2026-06-07 18:10 - 2026-06-07 18:15
+
+### 执行者
+Siri (OpenClaw Agent)
+
+### 任务概述
+根据主人要求，将项目方向从"图像分类"调整为"说话人识别"，使用 VoxCeleb 数据集。
+执行了以下工作：
+
+### 1. 文档调整
+
+#### 1.1 README.md 更新
+- ✅ 项目标题改为"ERes2NetV2 说话人识别 Pipeline"
+- ✅ 项目背景更新为说话人识别任务
+- ✅ 添加数据集说明表格
+- ✅ 更新关键技术决策表（添加 FBank、AAM-Softmax、EER/minDCF）
+
+#### 1.2 TASK_PLAN.md 更新
+- ✅ 阶段二"数据准备"全面改写为音频/说话人识别版本
+- ✅ 添加数据集说明和决策表
+
+#### 1.3 任务文档更新（02_数据准备/ 目录下 5 个文件）
+- ✅ `01_数据集选择与获取.md` → VoxCeleb 版本
+- ✅ `02_数据探索与分析EDA.md` → 音频 EDA 版本
+- ✅ `03_数据预处理与增强.md` → FBank/SpecAugment 版本
+- ✅ `04_数据集划分.md` → 说话人分离划分版本
+- ✅ `05_DataLoader构建.md` → SpeakerDataset 版本
+
+### 2. 脚本创建
+
+#### 2.1 `scripts/download_voxceleb.py`
+- ✅ VoxCeleb1 Dev/Test 自动下载脚本
+- ✅ 支持分卷下载（Dev 集 4 个部分）
+- ✅ 支持 --dev / --test / --meta / --all 参数
+
+#### 2.2 `scripts/extract_features.py`
+- ✅ AudioPreprocessor 类
+  - 音频加载、重采样、单声道转换
+  - 预加重
+  - FBank 特征提取（80 维）
+  - 固定长度填充/截断
+- ✅ 测试模式（--test）
+- ✅ 批量提取模式（--batch）
+
+#### 2.3 `scripts/prepare_voxceleb.py`
+- ✅ 完整 Pipeline：下载 → EDA → 特征提取 → 划分
+- ✅ 分步执行支持
+
+#### 2.4 `src/datasets/speaker_dataset.py`
+- ✅ SpeakerDataset 类（继承 torch.utils.data.Dataset）
+  - 从 .npy FBank 特征文件加载
+  - 支持固定长度
+  - 自动说话人标签编码
+- ✅ NWayKShotSampler（N-way K-shot 采样）
+- ✅ SpeakerDataLoader 工厂类
+- ✅ create_datasets() 便捷函数
+
+#### 2.5 `src/datasets/__init__.py`
+- ✅ 模块导出
+
+### 3. 配置文件
+- ✅ `configs/data_config.yaml`（音频参数、增强参数、DataLoader 配置）
+- ✅ `requirements.txt`（项目依赖）
+- ✅ `data/README.md`（数据集说明）
+
+### 4. 目录结构
+```
+vsprint/
+├── data/
+│   ├── README.md
+│   ├── voxceleb/          # 待填充（需手动下载或运行下载脚本）
+│   └── musan/             # 待填充（可选）
+├── scripts/
+│   ├── download_voxceleb.py   # ✅ 已创建
+│   ├── extract_features.py    # ✅ 已创建
+│   └── prepare_voxceleb.py    # ✅ 已创建
+├── src/
+│   └── datasets/
+│       ├── __init__.py        # ✅ 已创建
+│       └── speaker_dataset.py # ✅ 已创建
+└── configs/
+    └── data_config.yaml       # ✅ 已创建
+```
+
+### 5. 待完成（需要主人操作）
+- ⏳ 下载 VoxCeleb1 数据集（~12GB）
+  - 方式一：运行 `python scripts/download_voxceleb.py --all`
+  - 方式二：手动从 https://www.robots.ox.ac.uk/~vgg/data/voxceleb/vox1.html 下载
+- ⏳ 安装依赖：`pip install librosa soundfile torch numpy tqdm pyyaml`
+- ⏳ 运行特征提取：`python scripts/prepare_voxceleb.py --extract`
+- ⏳ 运行数据集划分：`python scripts/prepare_voxceleb.py --split`
+
+### 备注
+- 项目方向已完全从"图像分类"调整为"说话人识别"
+- 所有任务文档、README、TASK_PLAN 均已更新
+- 数据集准备脚本和 DataLoader 实现已完成
+- 等待数据集下载后即可执行特征提取和划分

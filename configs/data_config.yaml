@@ -1,0 +1,54 @@
+# VoxCeleb 数据准备配置
+
+# 数据路径
+data:
+  root_dir: "data/voxceleb"
+  dev_dir: "data/voxceleb/dev"
+  test_dir: "data/voxceleb/test"
+  meta_dir: "data/voxceleb/meta"
+  feature_dir: "data/voxceleb/dev/features"
+  splits_dir: "data/voxceleb/splits"
+
+# 音频预处理参数
+audio:
+  sample_rate: 16000      # 采样率
+  n_mels: 80              # FBank 维度
+  frame_length: 400       # 帧长（25ms @ 16kHz）
+  frame_shift: 160        # 帧移（10ms @ 16kHz）
+  n_fft: 512              # FFT 窗口大小
+  f_min: 0.0              # 最低频率
+  f_max: 8000.0           # 最高频率
+  preemphasis: 0.97       # 预加重系数
+
+# 特征处理
+features:
+  fixed_length: 300       # 固定帧数（~3 秒）
+  use_cmvn: true          # 是否使用 CMVN 归一化
+  use_energy: false       # 是否使用能量特征
+
+# 数据增强（训练集）
+augmentation:
+  speed_perturb: true     # 速度扰动
+  speed_factors: [0.9, 1.0, 1.1]
+  noise_augment: true     # 加性噪声
+  spec_augment: true      # SpecAugment
+  spec_augment_params:
+    time_mask: 10         # 时间遮蔽最大宽度
+    freq_mask: 20         # 频率遮蔽最大宽度
+    num_masks: 2          # 遮蔽数量
+  random_gain: true       # 随机增益
+  gain_range: 5           # ±5dB
+
+# 数据集划分
+split:
+  seed: 42
+  val_ratio: 0.1          # 验证集比例
+
+# DataLoader
+dataloader:
+  batch_size: 64
+  num_workers: 4
+  pin_memory: true
+  drop_last: true
+  n_way: null             # N-way K-shot（null 表示普通采样）
+  k_shot: null
