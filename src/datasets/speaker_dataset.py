@@ -94,8 +94,8 @@ class SpeakerDataset(Dataset):
             self.speaker_to_id[speaker_name] = speaker_id
             self.id_to_speaker[speaker_id] = speaker_name
 
-            # 查找所有 .npy 文件
-            npy_files = sorted(speaker_dir.glob("*.npy"))
+            # 查找所有 .npy 文件（递归，因为结构是 idXXXX/video_id/0000N.npy）
+            npy_files = sorted(speaker_dir.rglob("*.npy"))
             for npy_path in npy_files:
                 self.file_list.append(npy_path)
                 self.labels.append(speaker_id)
@@ -103,7 +103,7 @@ class SpeakerDataset(Dataset):
 
             speaker_id += 1
 
-        print(f"📊 {self.split} 数据集:")
+        print(f"[DATA] {self.split} 数据集:")
         print(f"   说话人数: {len(self.speaker_to_id)}")
         print(f"   样本数: {len(self.file_list)}")
 
@@ -322,7 +322,7 @@ def create_datasets(
             k_shot=k_shot,
         )
     else:
-        print(f"⚠️  训练数据目录不存在: {train_dir}")
+        print(f"[WARN]  训练数据目录不存在: {train_dir}")
         train_loader = None
         train_dataset = None
 
@@ -333,22 +333,22 @@ def create_datasets(
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🧪 SpeakerDataset 测试")
+    print(" SpeakerDataset 测试")
     print("=" * 60)
 
     # 检查数据目录
     data_dir = Path(__file__).resolve().parent.parent.parent / "data" / "voxceleb"
-    print(f"📁 数据目录: {data_dir}")
+    print(f"[DIR] 数据目录: {data_dir}")
 
     if not data_dir.exists():
-        print("❌ 数据目录不存在，请先下载 VoxCeleb 数据集")
+        print("[FAIL] 数据目录不存在，请先下载 VoxCeleb 数据集")
         print("   运行: python scripts/download_voxceleb.py")
         sys.exit(1)
 
     # 查找 FBank 特征目录
     feature_dir = data_dir / "dev" / "features"
     if feature_dir.exists():
-        print(f"📁 找到 FBank 特征目录: {feature_dir}")
+        print(f"[DIR] 找到 FBank 特征目录: {feature_dir}")
 
         # 创建数据集
         dataset = SpeakerDataset(
@@ -367,18 +367,18 @@ if __name__ == "__main__":
         )
 
         # 测试加载
-        print(f"\n📊 数据集信息:")
+        print(f"\n[DATA] 数据集信息:")
         print(f"   说话人数: {dataset.num_speakers}")
         print(f"   样本数: {len(dataset)}")
         print(f"   Batch 数: {len(dataloader)}")
 
         # 加载一个 batch
         for fbank, label in dataloader:
-            print(f"\n✅ 加载成功!")
+            print(f"\n[OK] 加载成功!")
             print(f"   FBank 形状: {fbank.shape}")
             print(f"   Label 形状: {label.shape}")
             print(f"   Label 范围: {label.min().item()} - {label.max().item()}")
             break
     else:
-        print(f"⚠️  FBank 特征目录不存在: {feature_dir}")
+        print(f"[WARN]  FBank 特征目录不存在: {feature_dir}")
         print("   请先运行特征提取: python scripts/extract_features.py --batch --data-dir data/voxceleb/dev")

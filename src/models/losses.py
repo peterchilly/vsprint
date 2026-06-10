@@ -75,9 +75,11 @@ class AAMSoftmaxLoss(nn.Module):
         # 计算 cos(θ + m) = cos(θ)cos(m) - sin(θ)sin(m)
         cos_theta_m = cos_theta * self.cos_m - sin_theta * self.sin_m
 
-        # 处理 θ > π - m 的情况
-        cos_theta_m[cos_theta > self.threshold] = \
-            cos_theta[cos_theta > self.threshold] - self.mm
+        # 处理 θ > π - m 的情况（确保 dtype 一致以兼容 AMP）
+        mm_tensor = torch.tensor(self.mm, dtype=cos_theta.dtype, device=cos_theta.device)
+        mask = cos_theta > self.threshold
+        cos_theta_m = cos_theta_m.clone()
+        cos_theta_m[mask] = cos_theta[mask] - mm_tensor
 
         # One-hot 标签
         one_hot = torch.zeros_like(cos_theta)
@@ -140,7 +142,10 @@ class ArcFaceLoss(nn.Module):
 
         # ArcFace: cos(θ + m)
         cos_theta_m = cos_theta * self.cos_m - sin_theta * self.sin_m
-        cos_theta_m[cos_theta > self.threshold] = cos_theta[cos_theta > self.threshold] - self.mm
+        mm_tensor = torch.tensor(self.mm, dtype=cos_theta.dtype, device=cos_theta.device)
+        mask = cos_theta > self.threshold
+        cos_theta_m = cos_theta_m.clone()
+        cos_theta_m[mask] = cos_theta[mask] - mm_tensor
 
         one_hot = torch.zeros_like(cos_theta)
         one_hot.scatter_(1, labels.unsqueeze(1), 1.0)

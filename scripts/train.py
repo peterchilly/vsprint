@@ -11,7 +11,7 @@ ERes2NetV2 说话人识别训练脚本
     # 从 checkpoint 恢复
     python scripts/train.py --resume checkpoints/best_model.pth
 
-    # 快速测试（1 epoch）
+    # 快速测试1 epoch
     python scripts/train.py --dry-run
 """
 
@@ -56,39 +56,50 @@ def set_seed(seed=42):
 def split_dataset_by_speakers(dataset, val_ratio=0.1, seed=42):
     """
     按说话人划分训练集和验证集
-    确保同一说话人的语音只出现在一个集合中
+    同时重映射训练集标签为 0~N-1
     """
     rng = random.Random(seed)
-
-    # 获取所有说话人
     speakers = sorted(list(dataset.speaker_to_id.keys()))
     num_val_speakers = max(1, int(len(speakers) * val_ratio))
-
-    # 随机选择验证集说话人
     val_speakers = set(rng.sample(speakers, num_val_speakers))
-    train_speakers = set(speakers) - val_speakers
+    train_speakers = sorted(set(speakers) - val_speakers)
 
-    # 构建索引
+    # 标签重映射: original_id -> 0..N-1
+    label_map = {dataset.speaker_to_id[spk]: i for i, spk in enumerate(train_speakers)}
+
     train_indices = []
     val_indices = []
-
     for idx, label in enumerate(dataset.labels):
         speaker_name = dataset.id_to_speaker[label]
         if speaker_name in val_speakers:
             val_indices.append(idx)
-        else:
+        elif label in label_map:
             train_indices.append(idx)
 
-    train_subset = Subset(dataset, train_indices)
+    train_subset = RemappedSubset(dataset, train_indices, label_map)
     val_subset = Subset(dataset, val_indices)
 
-    print(f"📊 数据集划分:")
+    print(f"[TB] 数据集划分:")
     print(f"   总说话人: {len(speakers)}")
     print(f"   训练集: {len(train_speakers)} 说话人, {len(train_indices)} 样本")
     print(f"   验证集: {len(val_speakers)} 说话人, {len(val_indices)} 样本")
     print(f"   验证集说话人: {sorted(list(val_speakers))[:5]}...")
 
     return train_subset, val_subset, len(train_speakers)
+
+
+class RemappedSubset(Subset):
+    """Subset that remaps labels to 0..N-1"""
+    def __init__(self, dataset, indices, label_map):
+        super().__init__(dataset, indices)
+        self.label_map = label_map
+
+    def __getitem__(self, idx):
+        fbank, label = self.dataset[self.indices[idx]]
+        return fbank, self.label_map[label]
+
+    def __getitems__(self, indices):
+        return [self.__getitem__(idx) for idx in indices]
 
 
 def train_one_epoch(model, loader, criterion, optimizer, scaler, epoch, config, device):
@@ -108,9 +119,13 @@ def train_one_epoch(model, loader, criterion, optimizer, scaler, epoch, config, 
 
         optimizer.zero_grad()
 
+        # Forward pass with autocast
         with autocast(enabled=config["training"]["amp"]):
             embeddings, logits = model(fbanks)
-            loss = criterion(embeddings, labels)
+
+        # Loss in FP32 (AAM-Softmax indexing incompatible with mixed precision)
+        with torch.cuda.amp.autocast(enabled=False):
+            loss = criterion(embeddings.float(), labels)
 
         scaler.scale(loss).backward()
 
@@ -186,7 +201,7 @@ def save_checkpoint(state, is_best, save_dir, filename="checkpoint.pth"):
     if is_best:
         best_path = save_path / "best_model.pth"
         torch.save(state, best_path)
-        print(f"  🏆 最优模型已保存: {best_path}")
+        print(f"  [BEST] 最优模型已保存: {best_path}")
 
 
 def load_config(config_path):
@@ -202,45 +217,45 @@ def main():
     parser.add_argument("--resume", type=str, default=None,
                         help="从 checkpoint 恢复训练")
     parser.add_argument("--dry-run", action="store_true",
-                        help="快速测试模式（1 epoch）")
+                        help="快速测试模式1 epoch")
     args = parser.parse_args()
 
     # 加载配置
     config = load_config(args.config)
     print("=" * 60)
-    print("⚡ ERes2NetV2 说话人识别训练")
+    print(" ERes2NetV2 说话人识别训练")
     print("=" * 60)
-    print(f"📁 项目目录: {PROJECT_ROOT}")
-    print(f"📋 配置文件: {args.config}")
+    print(f"[DIR] 项目目录: {PROJECT_ROOT}")
+    print(f" 配置文件: {args.config}")
 
     # 设置随机种子
     set_seed(42)
 
     # 设备
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"🔧 设备: {device}")
+    print(f"[TOOL] 设备: {device}")
     if torch.cuda.is_available():
         print(f"   GPU: {torch.cuda.get_device_name(0)}")
-        print(f"   显存: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+        print(f"   显存: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
-    # ── 数据集 ──
+    #  数据集 
     features_dir = PROJECT_ROOT / config["data"]["features_dir"]
     if not features_dir.exists():
-        print(f"❌ 特征目录不存在: {features_dir}")
+        print(f"[FAIL] 特征目录不存在: {features_dir}")
         print("   请先运行特征提取:")
         print("   python scripts/extract_features.py --batch --data-dir data/voxceleb/dev")
         sys.exit(1)
 
-    print(f"\n📂 加载数据集: {features_dir}")
+    print(f"\n 加载数据集: {features_dir}")
     full_dataset = SpeakerDataset(
         data_dir=str(features_dir),
         split="train",
-        n_mels=config["data"]["n_mels"],
+        n_mels=config["model"]["n_mels"],
         fixed_length=config["data"]["fixed_length"],
     )
 
     if len(full_dataset) == 0:
-        print("❌ 数据集为空，请先提取 FBank 特征")
+        print("[FAIL] 数据集为空请先提取 FBank 特征")
         sys.exit(1)
 
     # 按说话人划分训练/验证集
@@ -271,7 +286,7 @@ def main():
         pin_memory=config["data"]["pin_memory"],
     )
 
-    # ── 模型 ──
+    #  模型 
     model_config = config["model"]
     model = create_eres2netv2(
         variant=model_config["variant"],
@@ -285,12 +300,12 @@ def main():
     model = model.to(device)
 
     total_params = model.num_parameters()
-    print(f"\n🤖 模型: ERes2NetV2-{model_config['variant']}")
+    print(f"\n[MODEL] 模型: ERes2NetV2-{model_config['variant']}")
     print(f"   参数量: {total_params / 1e6:.2f}M")
     print(f"   Embedding 维度: {model_config['embedding_dim']}")
     print(f"   训练说话人数: {num_train_speakers}")
 
-    # ── 损失函数 ──
+    #  损失函数 
     loss_config = config["loss"]
     if loss_config["type"] == "aam_softmax":
         criterion = AAMSoftmaxLoss(
@@ -311,7 +326,7 @@ def main():
     criterion = criterion.to(device)
     print(f"   损失函数: {loss_config['type']}")
 
-    # ── 优化器 ──
+    #  优化器 
     train_config = config["training"]
     optimizer = optim.SGD(
         model.parameters(),
@@ -320,7 +335,7 @@ def main():
         weight_decay=train_config["weight_decay"],
     )
 
-    # ── 学习率调度器 ──
+    #  学习率调度器 
     warmup_epochs = train_config["warmup_epochs"]
     total_epochs = train_config["epochs"] if not args.dry_run else 1
 
@@ -335,10 +350,10 @@ def main():
     else:
         scheduler = CosineAnnealingLR(optimizer, T_max=total_epochs, eta_min=1e-6)
 
-    # ── 混合精度 ──
+    #  混合精度 
     scaler = GradScaler(enabled=train_config["amp"])
 
-    # ── 恢复训练 ──
+    #  恢复训练 
     start_epoch = 1
     best_val_acc = 0.0
     patience_counter = 0
@@ -346,7 +361,7 @@ def main():
     if args.resume or train_config.get("checkpoint", {}).get("resume"):
         resume_path = args.resume or train_config["checkpoint"]["resume"]
         if Path(resume_path).exists():
-            print(f"\n📦 从 checkpoint 恢复: {resume_path}")
+            print(f"\n[CKPT] 从 checkpoint 恢复: {resume_path}")
             checkpoint = torch.load(resume_path, map_location=device, weights_only=False)
             model.load_state_dict(checkpoint["model_state_dict"])
             criterion.load_state_dict(checkpoint.get("criterion_state_dict", {}))
@@ -355,28 +370,28 @@ def main():
             start_epoch = checkpoint.get("epoch", 1) + 1
             best_val_acc = checkpoint.get("best_val_acc", 0.0)
             scaler.load_state_dict(checkpoint.get("scaler_state_dict", {}))
-            print(f"   从 epoch {start_epoch} 继续，最优验证准确率: {best_val_acc:.1f}%")
+            print(f"   从 epoch {start_epoch} 继续最优验证准确率: {best_val_acc:.1f}%")
         else:
-            print(f"⚠️  Checkpoint 不存在: {resume_path}，从头开始训练")
+            print(f"[WARN]  Checkpoint 不存在: {resume_path}从头开始训练")
 
-    # ── TensorBoard ──
+    #  TensorBoard 
     try:
         from torch.utils.tensorboard import SummaryWriter
         run_name = f"ERes2NetV2-{model_config['variant']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         writer = SummaryWriter(log_dir=PROJECT_ROOT / config["logging"]["tensorboard_dir"] / run_name)
         writer.add_text("config", json.dumps(config, indent=2, ensure_ascii=False))
-        print(f"\n📊 TensorBoard: tensorboard --logdir {PROJECT_ROOT / config['logging']['tensorboard_dir']}")
+        print(f"\n[TB] TensorBoard: tensorboard --logdir {PROJECT_ROOT / config['logging']['tensorboard_dir']}")
     except ImportError:
         writer = None
-        print("\n⚠️  TensorBoard 未安装，跳过日志记录")
+        print("\n[WARN]  TensorBoard 未安装跳过日志记录")
 
-    # ── 训练循环 ──
+    #  训练循环 
     print(f"\n{'=' * 60}")
-    print(f"🚀 开始训练")
+    print(f"[GO] 开始训练")
     print(f"   Epochs: {total_epochs}")
     print(f"   Batch Size: {batch_size}")
     print(f"   学习率: {train_config['lr']} (Warmup: {warmup_epochs} epochs)")
-    print(f"   混合精度: {'✅' if train_config['amp'] else '❌'}")
+    print(f"   混合精度: {'[OK]' if train_config['amp'] else '[FAIL]'}")
     print(f"{'=' * 60}\n")
 
     training_start = time.time()
@@ -395,12 +410,12 @@ def main():
         epoch_time = time.time() - epoch_start
 
         # 打印汇总
-        print(f"\n{'─' * 50}")
+        print(f"\n{'' * 50}")
         print(f"Epoch {epoch}/{total_epochs} | "
               f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.1f}% | "
               f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.1f}% | "
               f"Time: {epoch_time:.1f}s")
-        print(f"{'─' * 50}")
+        print(f"{'' * 50}")
 
         # TensorBoard 日志
         if writer is not None:
@@ -436,7 +451,7 @@ def main():
         # 早停检查
         patience = train_config.get("early_stopping_patience", 20)
         if patience_counter >= patience:
-            print(f"\n⏹️  早停触发！验证准确率 {patience} 个 epoch 未提升")
+            print(f"\n[STOP]  早停触发验证准确率 {patience} 个 epoch 未提升")
             print(f"   最优验证准确率: {best_val_acc:.1f}%")
             break
 
@@ -456,12 +471,12 @@ def main():
             }, False, config["checkpoint"]["save_dir"], f"checkpoint_epoch_{epoch}.pth")
 
         if args.dry_run:
-            print("\n🧪 Dry run 完成")
+            print("\n Dry run 完成")
             break
 
     training_time = time.time() - training_start
     print(f"\n{'=' * 60}")
-    print(f"🏁 训练完成！")
+    print(f"[DONE] 训练完成")
     print(f"   总耗时: {training_time / 3600:.1f} 小时")
     print(f"   最优验证准确率: {best_val_acc:.1f}%")
     print(f"   模型保存位置: {config['checkpoint']['save_dir']}")
