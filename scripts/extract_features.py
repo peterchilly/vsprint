@@ -15,6 +15,8 @@
 import argparse
 import os
 import sys
+import logging
+import datetime
 from pathlib import Path
 import numpy as np
 
@@ -25,6 +27,10 @@ from tqdm import tqdm
 # 项目根目录
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+# 日志目录
+LOG_DIR = PROJECT_ROOT / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class AudioPreprocessor:
@@ -129,7 +135,7 @@ class AudioPreprocessor:
 
 def test_pipeline():
     """测试特征提取 pipeline"""
-    print("🧪 测试 FBank 特征提取 pipeline...")
+    print("[TEST] FBank feature extraction pipeline...")
 
     preprocessor = AudioPreprocessor(
         sample_rate=16000,
@@ -149,30 +155,62 @@ def test_pipeline():
 
     # 测试 FBank 提取
     fbank = preprocessor.extract_fbank(test_audio)
-    print(f"  ✅ FBank 特征形状: {fbank.shape}")
-    print(f"     帧数: {fbank.shape[0]}")
-    print(f"     特征维度: {fbank.shape[1]}")
+    print(f"  [OK] FBank shape: {fbank.shape}")
+    print(f"     frames: {fbank.shape[0]}")
+    print(f"     dims: {fbank.shape[1]}")
 
     # 测试固定长度填充
     fbank_fixed = preprocessor.pad_or_truncate(fbank, 300)
-    print(f"  ✅ 固定长度 FBank 形状: {fbank_fixed.shape}")
+    print(f"  [OK] Fixed length FBank shape: {fbank_fixed.shape}")
 
     # 测试截断
     fbank_short = preprocessor.pad_or_truncate(fbank, 100)
-    print(f"  ✅ 截断 FBank 形状: {fbank_short.shape}")
+    print(f"  [OK] Truncated FBank shape: {fbank_short.shape}")
 
     # 测试 preemphasis
     emphasized = preprocessor.apply_preemphasis(test_audio)
-    print(f"  ✅ 预加重后信号长度: {len(emphasized)}")
+    print(f"  [OK] Pre-emphasized signal length: {len(emphasized)}")
 
-    print("\n✅ Pipeline 测试通过！")
+    print("\n[OK] Pipeline test passed!")
 
 
 def batch_extract(data_dir: str, output_dir: str, n_mels: int = 80, sample_rate: int = 16000):
-    """批量提取 FBank 特征"""
+    """批量提取 FBank 特征（支持断点续传 + 日志记录）"""
     data_dir = Path(data_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 设置日志
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = LOG_DIR / f"extract_features_{timestamp}.log"
+
+    # 创建独立的 logger，不干扰第三方库
+    logger = logging.getLogger("extract_features")
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()  # 清除之前的 handlers
+
+    fh = logging.FileHandler(log_file, encoding="utf-8")
+    fh.setLevel(logging.DEBUG)
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setLevel(logging.INFO)
+
+    fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    fh.setFormatter(fmt)
+    sh.setFormatter(fmt)
+
+    logger.addHandler(fh)
+    logger.addHandler(sh)
+
+    # 压制第三方库的噪音
+    logging.getLogger("numba").setLevel(logging.WARNING)
+    logging.getLogger("librosa").setLevel(logging.WARNING)
+    logger.info("=" * 60)
+    logger.info("FBank 特征提取开始")
+    logger.info(f"日志文件: {log_file}")
+    logger.info(f"数据目录: {data_dir}")
+    logger.info(f"输出目录: {output_dir}")
+    logger.info(f"参数: n_mels={n_mels}, sample_rate={sample_rate}")
+    logger.info("=" * 60)
 
     preprocessor = AudioPreprocessor(
         sample_rate=sample_rate,
@@ -187,20 +225,27 @@ def batch_extract(data_dir: str, output_dir: str, n_mels: int = 80, sample_rate:
         audio_files = list(data_dir.rglob("*.m4a"))
 
     if not audio_files:
-        print(f"❌ 在 {data_dir} 中未找到音频文件")
-        return
+        logger.error(f"未找到音频文件: {data_dir}")
+        sys.exit(1)
 
-    print(f"📁 找到 {len(audio_files)} 个音频文件")
-    print(f"📦 输出目录: {output_dir}")
+    logger.info(f"找到 {len(audio_files)} 个音频文件")
 
     success = 0
     failed = 0
+    skipped = 0  # 已提取的文件跳过
+    error_list = []  # 记录错误详情
 
-    for audio_path in tqdm(audio_files, desc="提取特征"):
+    for idx, audio_path in enumerate(tqdm(audio_files, desc="Extracting features"), 1):
         try:
             # 构建输出路径（保持说话人目录结构）
             relative_path = audio_path.relative_to(data_dir)
             output_path = output_dir / relative_path.with_suffix(".npy")
+
+            # 跳过已提取的文件（断点续传）
+            if output_path.exists():
+                skipped += 1
+                continue
+
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             # 提取特征
@@ -211,11 +256,33 @@ def batch_extract(data_dir: str, output_dir: str, n_mels: int = 80, sample_rate:
             success += 1
 
         except Exception as e:
-            print(f"\n  ❌ 处理失败: {audio_path}")
-            print(f"     错误: {e}")
+            error_info = f"[{idx}/{len(audio_files)}] {audio_path.relative_to(data_dir)} | {type(e).__name__}: {e}"
+            logger.error(error_info)
+            error_list.append(error_info)
             failed += 1
 
-    print(f"\n✅ 完成！成功: {success}, 失败: {failed}")
+        # 每 5000 个文件输出一次进度汇总
+        total_done = success + failed + skipped
+        if total_done > 0 and total_done % 5000 == 0:
+            logger.info(
+                f"进度: {total_done}/{len(audio_files)}, "
+                f"成功={success}, 跳过={skipped}, 失败={failed}"
+            )
+
+    # 最终汇总
+    logger.info("=" * 60)
+    logger.info("提取完成")
+    logger.info(f"总数: {len(audio_files)}")
+    logger.info(f"成功: {success}")
+    logger.info(f"跳过: {skipped}")
+    logger.info(f"失败: {failed}")
+    if error_list:
+        logger.info(f"\n--- 失败文件列表 ({len(error_list)} 个) ---")
+        for err in error_list:
+            logger.info(f"  {err}")
+    logger.info("=" * 60)
+
+    return failed > 0  # 有失败则返回 True
 
 
 if __name__ == "__main__":
@@ -235,12 +302,14 @@ if __name__ == "__main__":
         if not args.data_dir:
             print("❌ --batch 模式需要指定 --data-dir")
             sys.exit(1)
-        batch_extract(args.data_dir, args.output_dir, args.n_mels, args.sample_rate)
+        has_error = batch_extract(args.data_dir, args.output_dir, args.n_mels, args.sample_rate)
+        if has_error:
+            sys.exit(2)  # 有失败文件，返回非零状态码
     elif args.audio:
         preprocessor = AudioPreprocessor(n_mels=args.n_mels, sample_rate=args.sample_rate)
         fbank = preprocessor.process_file(args.audio)
-        print(f"✅ FBank 特征形状: {fbank.shape}")
-        print(f"   帧数: {fbank.shape[0]}")
-        print(f"   维度: {fbank.shape[1]}")
+        print(f"[OK] FBank shape: {fbank.shape}")
+        print(f"   frames: {fbank.shape[0]}")
+        print(f"   dims: {fbank.shape[1]}")
     else:
-        print("使用 --help 查看用法")
+        print("Use --help for usage")
