@@ -1,0 +1,44 @@
+# ERes2NetV2 说话人识别 Docker Compose 配置
+
+version: "3.8"
+
+services:
+  vsprint-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vsprint-api
+    ports:
+      - "8000:8000"
+    environment:
+      - VSPRINT_CONFIG=configs/train_config.yaml
+      - VSPRINT_CHECKPOINT=checkpoints/best_model.pth
+      - VSPRINT_THRESHOLD=0.5
+      - VSPRINT_HOST=0.0.0.0
+      - VSPRINT_PORT=8000
+    volumes:
+      # 挂载模型 checkpoints（避免镜像过大）
+      - ./checkpoints:/app/checkpoints:ro
+      # 持久化上传目录
+      - vsprint-uploads:/app/uploads
+      # 持久化报告目录
+      - vsprint-reports:/app/reports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+        reservations:
+          memory: 1G
+          cpus: "0.5"
+
+volumes:
+  vsprint-uploads:
+  vsprint-reports:

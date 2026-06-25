@@ -17,6 +17,8 @@ import os
 import sys
 import logging
 import datetime
+import subprocess
+import tempfile
 from pathlib import Path
 import numpy as np
 
@@ -32,6 +34,31 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+# ffmpeg 路径：优先 PATH，其次 imageio_ffmpeg
+def _find_ffmpeg():
+    """查找 ffmpeg 可执行文件路径"""
+    # 1. 系统 PATH
+    import shutil as _shutil
+    ffmpeg_in_path = _shutil.which("ffmpeg")
+    if ffmpeg_in_path:
+        return ffmpeg_in_path
+    # 2. imageio_ffmpeg 包附带的 ffmpeg
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        pass
+    # 3. 常见安装路径
+    for p in [
+        r"C:\ffmpeg\bin\ffmpeg.exe",
+        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+    ]:
+        if Path(p).exists():
+            return p
+    return None
+
+FFMPEG_PATH = _find_ffmpeg()
+
 
 class AudioPreprocessor:
     """音频预处理器"""
@@ -46,6 +73,7 @@ class AudioPreprocessor:
         f_min: float = 0.0,
         f_max: float = 8000.0,
         preemphasis: float = 0.97,
+        apply_cmvn: bool = False,
     ):
         self.sample_rate = sample_rate
         self.n_mels = n_mels
@@ -55,15 +83,53 @@ class AudioPreprocessor:
         self.f_min = f_min
         self.f_max = f_max
         self.preemphasis = preemphasis
+        self.apply_cmvn = apply_cmvn
 
     def load_audio(self, audio_path: str, duration: float = None):
-        """加载音频文件，重采样到 16kHz 单声道"""
-        audio, sr = librosa.load(
-            audio_path,
-            sr=self.sample_rate,
-            mono=True,
-            duration=duration,
-        )
+        """加载音频文件，重采样到 16kHz 单声道
+
+        支持 .wav, .m4a (AAC), .ogg, .flac, .mp3 等格式。
+        对于非 WAV 格式，使用 ffmpeg 转为临时 WAV 再加载。
+        """
+        audio_path = str(audio_path)
+        ext = Path(audio_path).suffix.lower()
+
+        # WAV / FLAC 可以直接用 librosa
+        if ext in (".wav", ".flac"):
+            audio, sr = librosa.load(
+                audio_path,
+                sr=self.sample_rate,
+                mono=True,
+                duration=duration,
+            )
+            return audio
+
+        # 非 WAV 格式（m4a, mp3, ogg 等）使用 ffmpeg 转码
+        if FFMPEG_PATH is None:
+            raise RuntimeError(
+                "ffmpeg not found. Install ffmpeg or imageio-ffmpeg to read non-WAV formats."
+            )
+
+        # 使用 ffmpeg 解码为 raw PCM，通过 soundfile 读取
+        cmd = [
+            FFMPEG_PATH, "-y", "-i", audio_path,
+            "-f", "s16le", "-acodec", "pcm_s16le",
+            "-ar", str(self.sample_rate), "-ac", "1",
+            "-",  # 输出到 stdout
+        ]
+        result = subprocess.run(cmd, capture_output=True, timeout=120)
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"ffmpeg failed to decode {audio_path}: {result.stderr.decode('utf-8', errors='replace')[:500]}"
+            )
+
+        # 从 raw PCM 字节流解析为 numpy 数组
+        audio = np.frombuffer(result.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+
+        if duration is not None:
+            audio = audio[:int(self.sample_rate * duration)]
+
         return audio
 
     def apply_preemphasis(self, audio: np.ndarray):
@@ -109,7 +175,27 @@ class AudioPreprocessor:
             energy = np.full((log_fbank.shape[0], 1), energy)
             log_fbank = np.concatenate([log_fbank, energy], axis=-1)
 
+        # CMVN 归一化（Cepstral Mean Variance Normalization）
+        if self.apply_cmvn:
+            log_fbank = self.apply_cmvn_norm(log_fbank)
+
         return log_fbank
+
+    @staticmethod
+    def apply_cmvn_norm(fbank: np.ndarray) -> np.ndarray:
+        """应用 CMVN (Cepstral Mean Variance Normalization)
+
+        对每一句话的特征做均值方差归一化，消除信道效应。
+
+        参数:
+            fbank: (n_frames, n_mels) 特征矩阵
+
+        返回:
+            归一化后的特征 (n_frames, n_mels)
+        """
+        mean = fbank.mean(axis=0, keepdims=True)
+        std = fbank.std(axis=0, keepdims=True) + 1e-10
+        return (fbank - mean) / std
 
     def pad_or_truncate(self, fbank: np.ndarray, target_frames: int) -> np.ndarray:
         """填充或截断到固定帧数"""
@@ -174,8 +260,19 @@ def test_pipeline():
     print("\n[OK] Pipeline test passed!")
 
 
-def batch_extract(data_dir: str, output_dir: str, n_mels: int = 80, sample_rate: int = 16000):
-    """批量提取 FBank 特征（支持断点续传 + 日志记录）"""
+def batch_extract(data_dir: str, output_dir: str, n_mels: int = 80, sample_rate: int = 16000, apply_cmvn: bool = False):
+    """批量提取 FBank 特征（支持断点续传 + 日志记录）
+
+    支持 .wav, .m4a (AAC), .ogg, .flac, .mp3 等音频格式。
+    librosa 底层通过 ffmpeg 读取非 WAV 格式。
+
+    参数:
+        data_dir: 输入音频目录
+        output_dir: 输出特征目录
+        n_mels: FBank 维度
+        sample_rate: 采样率
+        apply_cmvn: 是否应用 CMVN 归一化
+    """
     data_dir = Path(data_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -209,20 +306,19 @@ def batch_extract(data_dir: str, output_dir: str, n_mels: int = 80, sample_rate:
     logger.info(f"日志文件: {log_file}")
     logger.info(f"数据目录: {data_dir}")
     logger.info(f"输出目录: {output_dir}")
-    logger.info(f"参数: n_mels={n_mels}, sample_rate={sample_rate}")
+    logger.info(f"参数: n_mels={n_mels}, sample_rate={sample_rate}, CMVN={apply_cmvn}")
     logger.info("=" * 60)
 
     preprocessor = AudioPreprocessor(
         sample_rate=sample_rate,
         n_mels=n_mels,
+        apply_cmvn=apply_cmvn,
     )
 
-    # 查找所有音频文件
-    audio_files = list(data_dir.rglob("*.wav"))
-    if not audio_files:
-        audio_files = list(data_dir.rglob("*.ogg"))
-    if not audio_files:
-        audio_files = list(data_dir.rglob("*.m4a"))
+    # 查找所有音频文件（支持多种格式）
+    audio_files = []
+    for ext in ("*.wav", "*.m4a", "*.ogg", "*.flac", "*.mp3"):
+        audio_files.extend(data_dir.rglob(ext))
 
     if not audio_files:
         logger.error(f"未找到音频文件: {data_dir}")
@@ -293,6 +389,7 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", type=str, default="data/voxceleb/features", help="输出目录")
     parser.add_argument("--n-mels", type=int, default=80, help="FBank 维度")
     parser.add_argument("--sample-rate", type=int, default=16000, help="采样率")
+    parser.add_argument("--cmvn", action="store_true", help="应用 CMVN 归一化")
     parser.add_argument("--test", action="store_true", help="运行测试")
     args = parser.parse_args()
 
@@ -302,11 +399,11 @@ if __name__ == "__main__":
         if not args.data_dir:
             print("❌ --batch 模式需要指定 --data-dir")
             sys.exit(1)
-        has_error = batch_extract(args.data_dir, args.output_dir, args.n_mels, args.sample_rate)
+        has_error = batch_extract(args.data_dir, args.output_dir, args.n_mels, args.sample_rate, apply_cmvn=args.cmvn)
         if has_error:
             sys.exit(2)  # 有失败文件，返回非零状态码
     elif args.audio:
-        preprocessor = AudioPreprocessor(n_mels=args.n_mels, sample_rate=args.sample_rate)
+        preprocessor = AudioPreprocessor(n_mels=args.n_mels, sample_rate=args.sample_rate, apply_cmvn=args.cmvn)
         fbank = preprocessor.process_file(args.audio)
         print(f"[OK] FBank shape: {fbank.shape}")
         print(f"   frames: {fbank.shape[0]}")

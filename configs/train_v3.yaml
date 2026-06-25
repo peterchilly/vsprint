@@ -1,0 +1,66 @@
+# ERes2NetV2 训练配置 v3.1
+# 基于 v3 训练结果调参:
+# - margin 0.2→0.3 (增大角度间隔, 迫使 embedding 更紧凑)
+# - scale 32→40 (放大差异)
+# - dropout 0.3→0.1 (降低过度正则化)
+# - weight_decay 0.05→0.01 (AdamW 下 0.05 过强)
+# - lr 0.001→0.0005 (更稳定收敛)
+# - fixed_length 200→300 (3秒语音, 更多上下文)
+# - epochs 50→80, patience 15→20 (给更多收敛空间)
+
+training:
+  epochs: 80
+  batch_size: 64
+  lr: 0.0005
+  optimizer: AdamW
+  momentum: 0.9
+  weight_decay: 0.01
+  lr_schedule: cosine
+  warmup_epochs: 5
+  grad_clip: 1.0
+  amp: true
+  gradient_accumulation: 1
+  early_stopping_patience: 20
+  label_smoothing: 0.1
+
+model:
+  variant: "34"
+  n_mels: 80
+  embedding_dim: 192
+  scale: 4
+  se_reduction: 8
+  pool_attention_dim: 128
+  dropout: 0.1
+
+loss:
+  type: aam_softmax
+  margin: 0.3
+  scale: 40.0
+  label_smoothing: 0.1
+
+data:
+  features_dir: data/voxceleb/features
+  fixed_length: 300
+  num_workers: 4
+  pin_memory: true
+  val_split_ratio: 0.1
+  val_random_seed: 42
+  augment: true
+  augment_config:
+    spec_augment:
+      time_mask: 15
+      freq_mask: 25
+      num_masks: 2
+    random_gain:
+      gain_range: 5.0
+
+checkpoint:
+  save_dir: checkpoints_v3
+  save_best: true
+  save_interval: 5
+  resume: null
+
+logging:
+  tensorboard_dir: runs_v3
+  log_interval: 50
+  gpu_monitor_interval: 30

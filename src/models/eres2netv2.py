@@ -245,7 +245,8 @@ class ERes2NetV2(nn.Module):
     }
 
     def __init__(self, variant="34", n_mels=80, embedding_dim=192,
-                 num_speakers=None, scale=4, se_reduction=8, pool_attention_dim=128):
+                 num_speakers=None, scale=4, se_reduction=8, pool_attention_dim=128,
+                 dropout=0.3):
         super().__init__()
         assert variant in self.block_configs, f"Unsupported variant: {variant}"
         self.variant = variant
@@ -306,7 +307,7 @@ class ERes2NetV2(nn.Module):
 
         # ── BN + Embedding ──
         self.bn = nn.BatchNorm1d(final_channels * 2)
-        self.dropout = nn.Dropout(p=0.3)
+        self.dropout = nn.Dropout(p=dropout)
         self.embedding_fc = nn.Linear(final_channels * 2, embedding_dim)
 
         # ── Classifier (optional) ──

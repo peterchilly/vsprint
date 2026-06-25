@@ -7,41 +7,43 @@ training:
   lr: 0.1
   optimizer: SGD
   momentum: 0.9
-  weight_decay: 0.0001
+  weight_decay: 0.0005
   lr_schedule: cosine
   warmup_epochs: 5
   grad_clip: 1.0
-  amp: true
+  amp: false
   gradient_accumulation: 1
-  early_stopping_patience: 15
+  early_stopping_patience: 25
+  label_smoothing: 0.15          # Label Smoothing 防过拟合
 
 model:
-  variant: "34"           # 34/50/101/152
-  n_mels: 80
+  variant: "34"
+  n_mels: 80                    # 修正：去掉了能量维度，只用 80 维 FBank
   embedding_dim: 192
-  scale: 4                # 分组数
+  scale: 4
   se_reduction: 8
   pool_attention_dim: 128
-  dropout: 0.3
+  dropout: 0.4
 
 loss:
-  type: aam_softmax       # aam_softmax / arcface / softmax
+  type: aam_softmax             # ce (CrossEntropy) / aam_softmax / arcface
   margin: 0.2
   scale: 30.0
+  label_smoothing: 0.1
 
 data:
   features_dir: data/voxceleb/features
-  fixed_length: 200       # ~2 秒 (200 frames @ 10ms)
-  num_workers: 4
+  fixed_length: 200
+  num_workers: 0
   pin_memory: true
-  val_split_ratio: 0.1    # 从 Dev 集中划分 10% 说话人作为验证集
+  val_split_ratio: 0.1
   val_random_seed: 42
 
 checkpoint:
   save_dir: checkpoints
   save_best: true
   save_interval: 5
-  resume: null            # checkpoint 路径（null 表示从头训练）
+  resume: checkpoints/best_model.pth
 
 logging:
   tensorboard_dir: runs

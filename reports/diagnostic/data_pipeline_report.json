@@ -1,0 +1,26 @@
+{
+  "feature_check": {
+    "n_samples": 100,
+    "n_mels": 80,
+    "dtype": "float32",
+    "value_range": {
+      "min": -8.0597,
+      "max": 8.5007
+    },
+    "has_nan": false,
+    "has_inf": false
+  },
+  "cmvn_status": "applied",
+  "cmvn_details": {
+    "global_mean": -0.0,
+    "global_std": 1.0
+  },
+  "label_alignment": "correct",
+  "speaker_distribution": {
+    "n_speakers": 1210,
+    "min_samples": 8,
+    "max_samples": 1002,
+    "mean_samples": 121.98,
+    "cv": 0.6361
+  }
+}

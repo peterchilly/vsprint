@@ -68,22 +68,31 @@ class AAMSoftmaxLoss(nn.Module):
         cos_theta = torch.matmul(x_norm, w_norm)  # (batch, num_speakers)
         cos_theta = cos_theta.clamp(-1, 1)
 
+        # AMP 兼容：所有常量转为对应 dtype 的 tensor
+        dtype = cos_theta.dtype
+        device = cos_theta.device
+        cos_m = torch.tensor(self.cos_m, dtype=dtype, device=device)
+        sin_m = torch.tensor(self.sin_m, dtype=dtype, device=device)
+        mm = torch.tensor(self.mm, dtype=dtype, device=device)
+        threshold = torch.tensor(self.threshold, dtype=dtype, device=device)
+
         # 计算 sin(θ)
         sin_theta = torch.sqrt(1.0 - cos_theta.pow(2))
         sin_theta = sin_theta.clamp(0, 1)
 
         # 计算 cos(θ + m) = cos(θ)cos(m) - sin(θ)sin(m)
-        cos_theta_m = cos_theta * self.cos_m - sin_theta * self.sin_m
+        cos_theta_m = cos_theta * cos_m - sin_theta * sin_m
+        # 确保 dtype 一致（AMP 下可能因为常量张量提升为 Float32）
+        cos_theta_m = cos_theta_m.to(dtype)
 
-        # 处理 θ > π - m 的情况（确保 dtype 一致以兼容 AMP）
-        mm_tensor = torch.tensor(self.mm, dtype=cos_theta.dtype, device=cos_theta.device)
-        mask = cos_theta > self.threshold
-        cos_theta_m = cos_theta_m.clone()
-        cos_theta_m[mask] = cos_theta[mask] - mm_tensor
+        # 处理 θ > π - m 的情况
+        mask = cos_theta > threshold
+        cos_theta_m[mask] = cos_theta[mask] - mm
 
         # One-hot 标签
-        one_hot = torch.zeros_like(cos_theta)
-        one_hot.scatter_(1, labels.unsqueeze(1), 1.0)
+        one_hot = torch.zeros(cos_theta.shape[0], cos_theta.shape[1], device=cos_theta.device, dtype=cos_theta.dtype)
+        batch_indices = torch.arange(cos_theta.shape[0], device=cos_theta.device)
+        one_hot[batch_indices, labels] = 1.0
 
         # 应用 margin：只在目标类上减去 margin
         output = cos_theta * (1.0 - one_hot) + cos_theta_m * one_hot
@@ -138,14 +147,22 @@ class ArcFaceLoss(nn.Module):
         w_norm = F.normalize(self.weight, dim=0)
 
         cos_theta = torch.matmul(x_norm, w_norm).clamp(-1, 1)
+
+        # AMP 兼容：所有常量转为对应 dtype 的 tensor
+        dtype = cos_theta.dtype
+        device = cos_theta.device
+        cos_m = torch.tensor(self.cos_m, dtype=dtype, device=device)
+        sin_m = torch.tensor(self.sin_m, dtype=dtype, device=device)
+        mm = torch.tensor(self.mm, dtype=dtype, device=device)
+
         sin_theta = torch.sqrt(1.0 - cos_theta.pow(2)).clamp(0, 1)
 
         # ArcFace: cos(θ + m)
-        cos_theta_m = cos_theta * self.cos_m - sin_theta * self.sin_m
-        mm_tensor = torch.tensor(self.mm, dtype=cos_theta.dtype, device=cos_theta.device)
-        mask = cos_theta > self.threshold
-        cos_theta_m = cos_theta_m.clone()
-        cos_theta_m[mask] = cos_theta[mask] - mm_tensor
+        cos_theta_m = cos_theta * cos_m - sin_theta * sin_m
+        cos_theta_m = cos_theta_m.to(dtype)  # 确保 dtype 一致
+
+        mask = cos_theta > torch.tensor(self.threshold, dtype=dtype, device=device)
+        cos_theta_m[mask] = cos_theta[mask] - mm
 
         one_hot = torch.zeros_like(cos_theta)
         one_hot.scatter_(1, labels.unsqueeze(1), 1.0)

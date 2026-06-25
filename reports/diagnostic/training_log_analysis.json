@@ -1,0 +1,446 @@
+{
+  "round_1": {
+    "epochs": [
+      {
+        "epoch": 45,
+        "eer": 0.1347,
+        "min_dcf": 0.2694,
+        "pos_mean": 0.3573,
+        "neg_mean": 0.021,
+        "train_loss": 4.592,
+        "train_acc": 0.0009,
+        "lr": 0.04686
+      },
+      {
+        "epoch": 46,
+        "eer": 0.1538,
+        "min_dcf": 0.3076,
+        "pos_mean": 0.3173,
+        "neg_mean": 0.0301,
+        "train_loss": 2.0179,
+        "train_acc": 0.001,
+        "lr": 0.044774
+      },
+      {
+        "epoch": 47,
+        "eer": 0.1624,
+        "min_dcf": 0.3249,
+        "pos_mean": 0.2886,
+        "neg_mean": 0.0217,
+        "train_loss": 1.3725,
+        "train_acc": 0.001,
+        "lr": 0.042696
+      },
+      {
+        "epoch": 48,
+        "eer": 0.1793,
+        "min_dcf": 0.3587,
+        "pos_mean": 0.269,
+        "neg_mean": 0.0201,
+        "train_loss": 1.0344,
+        "train_acc": 0.001,
+        "lr": 0.040631
+      },
+      {
+        "epoch": 49,
+        "eer": 0.1853,
+        "min_dcf": 0.3706,
+        "pos_mean": 0.2537,
+        "neg_mean": 0.0189,
+        "train_loss": 0.8014,
+        "train_acc": 0.0011,
+        "lr": 0.038582
+      },
+      {
+        "epoch": 50,
+        "eer": 0.1879,
+        "min_dcf": 0.3757,
+        "pos_mean": 0.2488,
+        "neg_mean": 0.0188,
+        "train_loss": 0.6277,
+        "train_acc": 0.0009,
+        "lr": 0.036554
+      },
+      {
+        "epoch": 51,
+        "eer": 0.192,
+        "min_dcf": 0.3839,
+        "pos_mean": 0.2368,
+        "neg_mean": 0.0125,
+        "train_loss": 0.5008,
+        "train_acc": 0.001,
+        "lr": 0.034549
+      },
+      {
+        "epoch": 52,
+        "eer": 0.1981,
+        "min_dcf": 0.3961,
+        "pos_mean": 0.2336,
+        "neg_mean": 0.0189,
+        "train_loss": 0.4038,
+        "train_acc": 0.0011,
+        "lr": 0.032571
+      },
+      {
+        "epoch": 53,
+        "eer": 0.2075,
+        "min_dcf": 0.4149,
+        "pos_mean": 0.2222,
+        "neg_mean": 0.0166,
+        "train_loss": 0.3254,
+        "train_acc": 0.0009,
+        "lr": 0.030624
+      },
+      {
+        "epoch": 54,
+        "eer": 0.209,
+        "min_dcf": 0.4181,
+        "pos_mean": 0.2209,
+        "neg_mean": 0.0171,
+        "train_loss": 0.2641,
+        "train_acc": 0.001,
+        "lr": 0.028711
+      },
+      {
+        "epoch": 55,
+        "eer": 0.2123,
+        "min_dcf": 0.4247,
+        "pos_mean": 0.2076,
+        "neg_mean": 0.0105,
+        "train_loss": 0.2129,
+        "train_acc": 0.001,
+        "lr": 0.026835
+      },
+      {
+        "epoch": 56,
+        "eer": 0.2235,
+        "min_dcf": 0.447,
+        "pos_mean": 0.2023,
+        "neg_mean": 0.0119,
+        "train_loss": 0.175,
+        "train_acc": 0.001,
+        "lr": 0.025
+      },
+      {
+        "epoch": 57,
+        "eer": 0.2218,
+        "min_dcf": 0.4435,
+        "pos_mean": 0.2003,
+        "neg_mean": 0.012,
+        "train_loss": 0.1411,
+        "train_acc": 0.001,
+        "lr": 0.023209
+      },
+      {
+        "epoch": 58,
+        "eer": 0.2201,
+        "min_dcf": 0.4403,
+        "pos_mean": 0.1982,
+        "neg_mean": 0.0096,
+        "train_loss": 0.1156,
+        "train_acc": 0.0009,
+        "lr": 0.021464
+      },
+      {
+        "epoch": 59,
+        "eer": 0.2222,
+        "min_dcf": 0.4443,
+        "pos_mean": 0.1994,
+        "neg_mean": 0.012,
+        "train_loss": 0.0913,
+        "train_acc": 0.0009,
+        "lr": 0.01977
+      },
+      {
+        "epoch": 60,
+        "eer": 0.2321,
+        "min_dcf": 0.4641,
+        "pos_mean": 0.1897,
+        "neg_mean": 0.0087,
+        "train_loss": 0.0743,
+        "train_acc": 0.0007,
+        "lr": 0.018129
+      }
+    ],
+    "best_eer": 0.1347,
+    "best_epoch": 45,
+    "eer_trend": "degrading"
+  },
+  "round_2": {
+    "epochs": [
+      {
+        "epoch": 46,
+        "eer": 0.1553,
+        "min_dcf": 0.3105,
+        "pos_mean": 0.3128,
+        "neg_mean": 0.0281,
+        "train_loss": 1.8945,
+        "train_acc": 0.0011,
+        "lr": 0.044774
+      },
+      {
+        "epoch": 47,
+        "eer": 0.17,
+        "min_dcf": 0.3401,
+        "pos_mean": 0.2948,
+        "neg_mean": 0.0295,
+        "train_loss": 1.4077,
+        "train_acc": 0.0012,
+        "lr": 0.042696
+      },
+      {
+        "epoch": 48,
+        "eer": 0.1717,
+        "min_dcf": 0.3433,
+        "pos_mean": 0.2744,
+        "neg_mean": 0.0217,
+        "train_loss": 1.0385,
+        "train_acc": 0.0011,
+        "lr": 0.040631
+      },
+      {
+        "epoch": 49,
+        "eer": 0.1824,
+        "min_dcf": 0.3648,
+        "pos_mean": 0.2578,
+        "neg_mean": 0.0203,
+        "train_loss": 0.8079,
+        "train_acc": 0.0011,
+        "lr": 0.038582
+      },
+      {
+        "epoch": 50,
+        "eer": 0.1961,
+        "min_dcf": 0.3922,
+        "pos_mean": 0.2357,
+        "neg_mean": 0.016,
+        "train_loss": 0.6352,
+        "train_acc": 0.0008,
+        "lr": 0.036554
+      },
+      {
+        "epoch": 51,
+        "eer": 0.1935,
+        "min_dcf": 0.3869,
+        "pos_mean": 0.2493,
+        "neg_mean": 0.0263,
+        "train_loss": 0.5076,
+        "train_acc": 0.001,
+        "lr": 0.034549
+      },
+      {
+        "epoch": 52,
+        "eer": 0.2022,
+        "min_dcf": 0.4044,
+        "pos_mean": 0.2257,
+        "neg_mean": 0.0144,
+        "train_loss": 0.4079,
+        "train_acc": 0.001,
+        "lr": 0.032571
+      },
+      {
+        "epoch": 53,
+        "eer": 0.2095,
+        "min_dcf": 0.4189,
+        "pos_mean": 0.218,
+        "neg_mean": 0.0159,
+        "train_loss": 0.3271,
+        "train_acc": 0.0011,
+        "lr": 0.030624
+      },
+      {
+        "epoch": 54,
+        "eer": 0.2105,
+        "min_dcf": 0.421,
+        "pos_mean": 0.2152,
+        "neg_mean": 0.0139,
+        "train_loss": 0.2665,
+        "train_acc": 0.001,
+        "lr": 0.028711
+      },
+      {
+        "epoch": 55,
+        "eer": 0.2119,
+        "min_dcf": 0.4238,
+        "pos_mean": 0.2165,
+        "neg_mean": 0.0151,
+        "train_loss": 0.2136,
+        "train_acc": 0.0009,
+        "lr": 0.026835
+      },
+      {
+        "epoch": 56,
+        "eer": 0.2141,
+        "min_dcf": 0.4283,
+        "pos_mean": 0.2103,
+        "neg_mean": 0.013,
+        "train_loss": 0.177,
+        "train_acc": 0.001,
+        "lr": 0.025
+      },
+      {
+        "epoch": 57,
+        "eer": 0.2212,
+        "min_dcf": 0.4425,
+        "pos_mean": 0.2033,
+        "neg_mean": 0.0145,
+        "train_loss": 0.1426,
+        "train_acc": 0.0009,
+        "lr": 0.023209
+      },
+      {
+        "epoch": 58,
+        "eer": 0.2237,
+        "min_dcf": 0.4474,
+        "pos_mean": 0.1965,
+        "neg_mean": 0.0097,
+        "train_loss": 0.1177,
+        "train_acc": 0.0008,
+        "lr": 0.021464
+      },
+      {
+        "epoch": 59,
+        "eer": 0.2234,
+        "min_dcf": 0.4468,
+        "pos_mean": 0.1966,
+        "neg_mean": 0.0099,
+        "train_loss": 0.0932,
+        "train_acc": 0.001,
+        "lr": 0.01977
+      },
+      {
+        "epoch": 60,
+        "eer": 0.2271,
+        "min_dcf": 0.4543,
+        "pos_mean": 0.19,
+        "neg_mean": 0.0076,
+        "train_loss": 0.0742,
+        "train_acc": 0.001,
+        "lr": 0.018129
+      },
+      {
+        "epoch": 61,
+        "eer": 0.2274,
+        "min_dcf": 0.4548,
+        "pos_mean": 0.1883,
+        "neg_mean": 0.0057,
+        "train_loss": 0.0581,
+        "train_acc": 0.0009,
+        "lr": 0.016543
+      },
+      {
+        "epoch": 62,
+        "eer": 0.2303,
+        "min_dcf": 0.4606,
+        "pos_mean": 0.1857,
+        "neg_mean": 0.0075,
+        "train_loss": 0.0455,
+        "train_acc": 0.0009,
+        "lr": 0.015017
+      },
+      {
+        "epoch": 63,
+        "eer": 0.2407,
+        "min_dcf": 0.4814,
+        "pos_mean": 0.1788,
+        "neg_mean": 0.0096,
+        "train_loss": 0.0333,
+        "train_acc": 0.001,
+        "lr": 0.013552
+      },
+      {
+        "epoch": 64,
+        "eer": 0.2377,
+        "min_dcf": 0.4754,
+        "pos_mean": 0.1762,
+        "neg_mean": 0.0055,
+        "train_loss": 0.0254,
+        "train_acc": 0.0011,
+        "lr": 0.01215
+      },
+      {
+        "epoch": 65,
+        "eer": 0.2406,
+        "min_dcf": 0.4813,
+        "pos_mean": 0.1713,
+        "neg_mean": 0.0037,
+        "train_loss": 0.0171,
+        "train_acc": 0.0011,
+        "lr": 0.010815
+      },
+      {
+        "epoch": 66,
+        "eer": 0.2439,
+        "min_dcf": 0.4878,
+        "pos_mean": 0.1697,
+        "neg_mean": 0.0049,
+        "train_loss": 0.0107,
+        "train_acc": 0.001,
+        "lr": 0.009549
+      },
+      {
+        "epoch": 67,
+        "eer": 0.2446,
+        "min_dcf": 0.4892,
+        "pos_mean": 0.1661,
+        "neg_mean": 0.0021,
+        "train_loss": 0.0052,
+        "train_acc": 0.0009,
+        "lr": 0.008354
+      },
+      {
+        "epoch": 68,
+        "eer": 0.2463,
+        "min_dcf": 0.4926,
+        "pos_mean": 0.165,
+        "neg_mean": 0.0026,
+        "train_loss": 0.0026,
+        "train_acc": 0.0011,
+        "lr": 0.007232
+      },
+      {
+        "epoch": 69,
+        "eer": 0.2474,
+        "min_dcf": 0.4949,
+        "pos_mean": 0.1636,
+        "neg_mean": 0.002,
+        "train_loss": 0.002,
+        "train_acc": 0.0011,
+        "lr": 0.006185
+      },
+      {
+        "epoch": 70,
+        "eer": 0.2482,
+        "min_dcf": 0.4963,
+        "pos_mean": 0.1622,
+        "neg_mean": 0.0018,
+        "train_loss": 0.0017,
+        "train_acc": 0.0009,
+        "lr": 0.005214
+      },
+      {
+        "epoch": 71,
+        "eer": 0.2494,
+        "min_dcf": 0.4988,
+        "pos_mean": 0.1621,
+        "neg_mean": 0.0022,
+        "train_loss": 0.0015,
+        "train_acc": 0.001,
+        "lr": 0.004323
+      }
+    ],
+    "best_eer": 0.1553,
+    "best_epoch": 46,
+    "eer_trend": "degrading"
+  },
+  "conclusion": "model_collapse",
+  "evidence": [
+    "Round 1: EER degrades from 0.1347 to 0.2321 over training",
+    "Round 2: EER degrades from 0.1553 to 0.2494 over training",
+    "Train accuracy stays at ~0.0012 (random level for 1211 speakers = ~0.0008)",
+    "Round 1: Loss decreases from 4.592 to 0.0743 but accuracy doesn't improve",
+    "Round 2: Loss decreases from 1.8945 to 0.0015 but accuracy doesn't improve",
+    "Round 1: pos_mean drops from 0.3573 to 0.1897",
+    "Round 2: pos_mean drops from 0.3128 to 0.1621"
+  ]
+}

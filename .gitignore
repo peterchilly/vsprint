@@ -37,8 +37,14 @@ data/*/
 *.onnx
 *.engine
 checkpoints/
+checkpoints_v2/
+checkpoints_v3/
+checkpoints_v4/
+test_checkpoints/
+test_runs/
 runs/
 logs/
+uploads/
 
 # OS
 .DS_Store

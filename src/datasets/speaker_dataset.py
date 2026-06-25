@@ -28,6 +28,8 @@ class SpeakerDataset(Dataset):
     说话人识别数据集
 
     从预提取的 FBank 特征文件（.npy）加载数据。
+    支持单目录或多目录加载（合并多个数据源）。
+
     目录结构：
         data_dir/
             speaker_001/
@@ -37,6 +39,10 @@ class SpeakerDataset(Dataset):
             speaker_002/
                 ...
 
+    多目录模式：
+        data_dirs = ["data/voxceleb/features", "data/voxceleb2/features"]
+        每个目录下的说话人会被合并，说话人 ID 全局唯一。
+
     返回:
         fbank: (n_frames, n_mels) 或 (n_mels, n_frames) 根据配置
         speaker_id: 说话人整数 ID
@@ -44,17 +50,19 @@ class SpeakerDataset(Dataset):
 
     def __init__(
         self,
-        data_dir: str,
+        data_dir: str = None,
         split: str = "train",
         n_mels: int = 80,
         fixed_length: Optional[int] = None,
         use_energy: bool = False,
         include_energy: bool = False,
         transform=None,
+        data_dirs: List[str] = None,
     ):
         """
         参数:
-            data_dir: FBank 特征目录
+            data_dir: 单个 FBank 特征目录（向后兼容）
+            data_dirs: 多个 FBank 特征目录列表（优先于 data_dir）
             split: 'train' / 'val' / 'test'
             n_mels: FBank 维度
             fixed_length: 固定帧数（None 表示使用实际长度）
@@ -62,37 +70,53 @@ class SpeakerDataset(Dataset):
             include_energy: FBank 是否包含能量维度
             transform: 额外的数据增强变换
         """
-        self.data_dir = Path(data_dir)
+        # 支持 data_dirs (多目录) 或 data_dir (单目录)
+        if data_dirs is not None:
+            self.data_dirs = [Path(d) for d in data_dirs]
+        else:
+            self.data_dirs = [Path(data_dir)] if data_dir else []
+
+        if not self.data_dirs:
+            raise ValueError("必须提供 data_dir 或 data_dirs 参数")
+
         self.split = split
         self.n_mels = n_mels
         self.fixed_length = fixed_length
         self.include_energy = include_energy
         self.transform = transform
 
-        # 说话人目录
-        if split == "train":
-            self.speaker_dirs = sorted([d for d in self.data_dir.iterdir() if d.is_dir()])
-        else:
-            # val/test 也使用相同结构
-            self.speaker_dirs = sorted([d for d in self.data_dir.iterdir() if d.is_dir()])
+        # 说话人目录（从所有数据源收集）
+        self.speaker_dirs = []
+        for d in self.data_dirs:
+            if d.exists():
+                self.speaker_dirs.extend(sorted([x for x in d.iterdir() if x.is_dir()]))
 
         # 构建文件列表和标签
         self.file_list = []  # List[Path]
         self.speaker_to_id = {}  # str -> int
         self.id_to_speaker = {}  # int -> str
         self.labels = []  # List[int]
+        self.source_dir = {}  # speaker_name -> Path (记录数据来源)
 
         self._build_file_list()
 
     def _build_file_list(self):
-        """构建文件列表和说话人标签映射"""
+        """构建文件列表和说话人标签映射（支持多数据源）"""
         file_idx = 0
         speaker_id = 0
+        duplicate_speakers = 0
 
         for speaker_dir in self.speaker_dirs:
             speaker_name = speaker_dir.name
+
+            # 如果说话人在多个数据源中重复，跳过（保留第一次出现的）
+            if speaker_name in self.speaker_to_id:
+                duplicate_speakers += 1
+                continue
+
             self.speaker_to_id[speaker_name] = speaker_id
             self.id_to_speaker[speaker_id] = speaker_name
+            self.source_dir[speaker_name] = speaker_dir.parent
 
             # 查找所有 .npy 文件（递归，因为结构是 idXXXX/video_id/0000N.npy）
             npy_files = sorted(speaker_dir.rglob("*.npy"))
@@ -104,6 +128,12 @@ class SpeakerDataset(Dataset):
             speaker_id += 1
 
         print(f"[DATA] {self.split} 数据集:")
+        print(f"   数据源: {len(self.data_dirs)} 个目录")
+        for d in self.data_dirs:
+            n_spk = sum(1 for x in d.iterdir() if x.is_dir()) if d.exists() else 0
+            print(f"     - {d} ({n_spk} 说话人)")
+        if duplicate_speakers > 0:
+            print(f"   重复说话人（已跳过）: {duplicate_speakers}")
         print(f"   说话人数: {len(self.speaker_to_id)}")
         print(f"   样本数: {len(self.file_list)}")
 

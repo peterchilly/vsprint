@@ -1,0 +1,231 @@
+{
+  "metrics": {
+    "eer": 0.10434710743801653,
+    "eer_threshold": 0.1820900862639373,
+    "min_dcf": 0.20869421487603307,
+    "dcf_threshold": 0.1820900862639373,
+    "pos_mean": 0.3860072076515456,
+    "neg_mean": 0.026301543821388287,
+    "pos_std": 0.17533570707004684,
+    "neg_std": 0.10889309277865074,
+    "n_pos_pairs": 60500,
+    "n_neg_pairs": 60500
+  },
+  "efficiency": {
+    "parameters": {
+      "total_params": 4959521,
+      "trainable_params": 4959521,
+      "total_params_M": 4.959521,
+      "trainable_params_M": 4.959521
+    },
+    "flops": {
+      "flops": 740571008,
+      "flops_G": 0.740571008,
+      "params_from_thop": 4250273,
+      "method": "thop"
+    },
+    "latency": {
+      "batch_1": {
+        "mean_ms": 21.222689999981412,
+        "std_ms": 0.8089415064985078,
+        "p50_ms": 21.090550000053554,
+        "p95_ms": 22.298970000042573,
+        "p99_ms": 22.99609299995609,
+        "min_ms": 19.706799999994473,
+        "max_ms": 23.370599999907427,
+        "n_runs": 50
+      },
+      "batch_32": {
+        "mean_ms": 25.773212000003696,
+        "std_ms": 2.9987424605320734,
+        "p50_ms": 25.06669999991118,
+        "p95_ms": 31.40163999999004,
+        "p99_ms": 34.11991899998383,
+        "min_ms": 21.354299999984505,
+        "max_ms": 36.43609999994624,
+        "n_runs": 50
+      }
+    },
+    "gpu_memory": {
+      "available": true,
+      "mem_before_mb": 28.30712890625,
+      "mem_peak_mb": 36.27587890625,
+      "mem_after_mb": 28.3125,
+      "mem_inference_mb": 7.96875
+    }
+  },
+  "confusion_pairs": [
+    [
+      55,
+      116,
+      0.8108104467391968
+    ],
+    [
+      34,
+      82,
+      0.7604894042015076
+    ],
+    [
+      21,
+      89,
+      0.7529755234718323
+    ],
+    [
+      36,
+      82,
+      0.7452399730682373
+    ],
+    [
+      48,
+      99,
+      0.7386537790298462
+    ],
+    [
+      77,
+      114,
+      0.6996687054634094
+    ],
+    [
+      30,
+      83,
+      0.6974057555198669
+    ],
+    [
+      40,
+      82,
+      0.6839626431465149
+    ],
+    [
+      62,
+      82,
+      0.6825117468833923
+    ],
+    [
+      21,
+      105,
+      0.6706037521362305
+    ]
+  ],
+  "misclassified_samples": [
+    {
+      "true_speaker_a": 10,
+      "true_speaker_b": 23,
+      "similarity": 0.5345359444618225,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 59,
+      "true_speaker_b": 42,
+      "similarity": 0.48639631271362305,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 32,
+      "true_speaker_b": 40,
+      "similarity": 0.4757934808731079,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 100,
+      "true_speaker_b": 21,
+      "similarity": 0.4084503948688507,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 19,
+      "true_speaker_b": 0,
+      "similarity": 0.39375102519989014,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 19,
+      "true_speaker_b": 96,
+      "similarity": 0.3713425397872925,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 6,
+      "true_speaker_b": 49,
+      "similarity": 0.3700634837150574,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 72,
+      "true_speaker_b": 108,
+      "similarity": 0.35401487350463867,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 55,
+      "true_speaker_b": 27,
+      "similarity": 0.35342222452163696,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 68,
+      "true_speaker_b": 16,
+      "similarity": 0.32449087500572205,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 71,
+      "true_speaker_b": 43,
+      "similarity": 0.3233206868171692,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 37,
+      "true_speaker_b": 111,
+      "similarity": 0.3165135085582733,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 45,
+      "true_speaker_b": 66,
+      "similarity": 0.31483641266822815,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 90,
+      "true_speaker_b": 80,
+      "similarity": 0.3129662871360779,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 120,
+      "true_speaker_b": 93,
+      "similarity": 0.2975340187549591,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 36,
+      "true_speaker_b": 90,
+      "similarity": 0.29694607853889465,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 26,
+      "true_speaker_b": 29,
+      "similarity": 0.2916492223739624,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 12,
+      "true_speaker_b": 80,
+      "similarity": 0.28863757848739624,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 72,
+      "true_speaker_b": 63,
+      "similarity": 0.2796822786331177,
+      "error_type": "false_accept"
+    },
+    {
+      "true_speaker_a": 50,
+      "true_speaker_b": 80,
+      "similarity": 0.2741484045982361,
+      "error_type": "false_accept"
+    }
+  ]
+}
